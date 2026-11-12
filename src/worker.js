@@ -12,19 +12,22 @@ export default {
       return new Response(null, { headers: corsHeaders });
     }
 
-    // Rota do Proxy tratada por substring para evitar qualquer erro de parse de parâmetros
     if (requestUrl.pathname === "/proxy") {
       const fullUrl = request.url;
+      console.log("[Worker] Requisição de proxy recebida para URL bruta:", fullUrl);
+
       const queryIndex = fullUrl.indexOf("?url=");
       
       if (queryIndex === -1) {
-        return new Response(JSON.stringify({ error: "Parâmetro ?url= ausente" }), {
+        console.error("[Worker Error] Parâmetro ?url= não encontrado na query string.");
+        return new Response(JSON.stringify({ error: "Parâmetro ?url= ausente na requisição" }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
       const targetUrl = decodeURIComponent(fullUrl.substring(queryIndex + 5));
+      console.log("[Worker] Alvo decodificado com sucesso:", targetUrl);
 
       try {
         const response = await fetch(targetUrl, {
@@ -36,6 +39,7 @@ export default {
           redirect: "follow",
         });
 
+        console.log(`[Worker] Resposta do alvo recebida. Status: ${response.status}`);
         const body = await response.text();
 
         return new Response(body, {
@@ -46,6 +50,7 @@ export default {
           },
         });
       } catch (err) {
+        console.error("[Worker Catch Error]:", err.message);
         return new Response(JSON.stringify({ error: err.message }), {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -53,7 +58,6 @@ export default {
       }
     }
 
-    // Serve os arquivos estáticos
     try {
       return await env.ASSETS.fetch(request);
     } catch (e) {
