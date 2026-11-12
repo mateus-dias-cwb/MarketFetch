@@ -47,7 +47,8 @@ fetchBtn.addEventListener('click', async () => {
         }
 
         const html = await response.text();
-        console.log(`[Client] HTML recebido com sucesso. Tamanho: ${html.length} caracteres.`);
+        console.log("[Client] HTML bruto recebido do proxy (primeiros 1000 caracteres):", html.substring(0, 1000));
+        console.log(`[Client] HTML recebido com sucesso. Tamanho total: ${html.length} caracteres.`);
         
         const extractedImages = parseMarketplaceHtml(html);
         console.log("[Client] Imagens extraídas pelo parser:", extractedImages);
