@@ -4,36 +4,30 @@ export function parseMarketplaceHtml(htmlString) {
     
     const mediaUrls = new Set();
 
-    console.log("[Parser] Iniciando varredura profunda de URLs no HTML...");
-
-    // 1. Regex global para capturar qualquer URL de imagem do CDN do Facebook no texto cru do HTML/scripts
-    // O Facebook costuma escapar barras em JSON como \u002F ou usar barras normais /
+    // Regex global para capturar URLs de imagens do CDN do Facebook
     const rawMatches = htmlString.match(/https?:\/\/[^"'\s<>]+?\.(?:jpg|jpeg|png|webp)(?:\?[^"'\s<>]*?)?/gi);
     
     if (rawMatches) {
         rawMatches.forEach(rawUrl => {
-            // Limpa caracteres de escape comuns do JSON (\u002F -> / e barras invertidas)
             const cleanUrl = rawUrl.replace(/\\u002F/g, '/').replace(/\\/g, '');
             
-            if (
-                (cleanUrl.includes('scontent') || cleanUrl.includes('fbcdn.net')) &&
-                !cleanUrl.includes('profile') &&
-                !cleanUrl.includes('emoji') &&
-                !cleanUrl.toLowerCase().includes('.css') &&
-                !cleanUrl.toLowerCase().includes('.js') &&
-                !cleanUrl.toLowerCase().includes('.woff')
-            ) {
+            const lower = cleanUrl.toLowerCase();
+            const isValidImage = 
+                (lower.includes('scontent') || lower.includes('fbcdn.net')) &&
+                !lower.includes('profile') &&
+                !lower.includes('emoji') &&
+                !lower.includes('logo') &&
+                !lower.includes('static') &&
+                !lower.includes('rsrc.php') &&
+                !lower.includes('.css') &&
+                !lower.includes('.js') &&
+                !lower.includes('.ico');
+
+            if (isValidImage) {
                 mediaUrls.add(cleanUrl);
             }
         });
     }
 
-    // 2. Garante captação da Open Graph principal caso venha isolada
-    const ogImage = doc.querySelector('meta[property="og:image"]');
-    if (ogImage && ogImage.content) {
-        mediaUrls.add(ogImage.content);
-    }
-
-    console.log(`[Parser] Total de mídias únicas extraídas: ${mediaUrls.size}`);
     return Array.from(mediaUrls);
 }
