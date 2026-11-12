@@ -20,6 +20,7 @@ function showStatus(message, type = 'info') {
 
 fetchBtn.addEventListener('click', async () => {
     const url = urlInput.value.trim();
+    console.log("[Client] URL inserida:", url);
 
     if (!url) {
         showStatus('Por favor, insira uma URL válida do Facebook Marketplace.', 'error');
@@ -33,22 +34,29 @@ fetchBtn.addEventListener('click', async () => {
     mediaGrid.innerHTML = '';
 
     try {
-        // Chamada direta para a rota de proxy do nosso próprio domínio na Cloudflare
-        const response = await fetch(`/proxy?url=${encodeURIComponent(url)}`);
-        
+        const proxyEndpoint = `/proxy?url=${encodeURIComponent(url)}`;
+        console.log("[Client] Disparando fetch para:", proxyEndpoint);
+
+        const response = await fetch(proxyEndpoint);
+        console.log("[Client] Status da resposta HTTP:", response.status);
+
         if (!response.ok) {
-            throw new Error(`Falha na requisição (Status: ${response.status})`);
+            const errorBody = await response.text();
+            console.error("[Client Error Body]:", errorBody);
+            throw new Error(`Falha na requisição (Status: ${response.status}) - Detalhes: ${errorBody}`);
         }
 
         const html = await response.text();
+        console.log(`[Client] HTML recebido com sucesso. Tamanho: ${html.length} caracteres.`);
+        
         const extractedImages = parseMarketplaceHtml(html);
+        console.log("[Client] Imagens extraídas pelo parser:", extractedImages);
 
         if (extractedImages.length === 0) {
             showStatus('Nenhuma imagem encontrada. Verifique se o link é público e correto.', 'error');
             return;
         }
 
-        // Renderiza as imagens encontradas na grid
         mediaCount.textContent = extractedImages.length;
         extractedImages.forEach((imgUrl, index) => {
             const card = document.createElement('div');
@@ -72,6 +80,7 @@ fetchBtn.addEventListener('click', async () => {
         showStatus(`Extração concluída com sucesso! ${extractedImages.length} mídias localizadas.`, 'success');
 
     } catch (err) {
+        console.error("[Client Catch Error]:", err);
         showStatus(`Erro ao processar: ${err.message}`, 'error');
     } finally {
         fetchBtn.disabled = false;
