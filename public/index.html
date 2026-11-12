@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MarketFetch</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col items-center justify-center p-4">
+    <div class="max-w-md w-full bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+        <h1 class="text-2xl font-bold mb-2 text-cyan-400">MarketFetch</h1>
+        <p class="text-slate-400 text-sm mb-6">Cole o link do Facebook Marketplace para extração de mídia.</p>
+        
+        <div class="space-y-4">
+            <input type="text" id="urlInput" placeholder="https://www.facebook.com/marketplace/item/..." 
+                class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-cyan-500">
+            <button id="fetchBtn" 
+                class="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-medium py-3 rounded-lg transition-colors">
+                Extrair Mídia
+            </button>
+        </div>
+
+        <div id="result" class="mt-6 text-xs text-slate-400 break-all"></div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
