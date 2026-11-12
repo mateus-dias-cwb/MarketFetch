@@ -1,6 +1,6 @@
 export default {
   async fetch(request, env, ctx) {
-    const url = new URL(request.url);
+    const requestUrl = new URL(request.url);
 
     const corsHeaders = {
       "Access-Control-Allow-Origin": "*",
@@ -12,16 +12,19 @@ export default {
       return new Response(null, { headers: corsHeaders });
     }
 
-    // Rota do Proxy
-    if (url.pathname === "/proxy") {
-      const targetUrl = url.searchParams.get("url");
-
-      if (!targetUrl) {
+    // Rota do Proxy tratada por substring para evitar qualquer erro de parse de parâmetros
+    if (requestUrl.pathname === "/proxy") {
+      const fullUrl = request.url;
+      const queryIndex = fullUrl.indexOf("?url=");
+      
+      if (queryIndex === -1) {
         return new Response(JSON.stringify({ error: "Parâmetro ?url= ausente" }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+
+      const targetUrl = decodeURIComponent(fullUrl.substring(queryIndex + 5));
 
       try {
         const response = await fetch(targetUrl, {
@@ -50,7 +53,7 @@ export default {
       }
     }
 
-    // Serve os arquivos estáticos da pasta public/ configurada no wrangler.jsonc
+    // Serve os arquivos estáticos
     try {
       return await env.ASSETS.fetch(request);
     } catch (e) {
