@@ -6,6 +6,7 @@ const statusBox = document.getElementById('statusBox');
 const resultsSection = document.getElementById('resultsSection');
 const mediaGrid = document.getElementById('mediaGrid');
 const mediaCount = document.getElementById('mediaCount');
+let lastFetchedHtml = '';
 
 function showStatus(message, type = 'info') {
     statusBox.textContent = message;
@@ -49,6 +50,20 @@ fetchBtn.addEventListener('click', async () => {
         const html = await response.text();
         console.log("[Client] HTML bruto recebido do proxy (primeiros 1000 caracteres):", html.substring(0, 1000));
         console.log(`[Client] HTML recebido com sucesso. Tamanho total: ${html.length} caracteres.`);
+
+        lastFetchedHtml = html;
+        console.log("[Client] HTML recebido com sucesso. Tamanho total:", html.length);
+        
+        // Mostra o botão de download do HTML
+        const downloadBtn = document.getElementById('downloadHtmlBtn');
+        downloadBtn.classList.remove('hidden');
+        downloadBtn.onclick = () => {
+            const blob = new Blob([lastFetchedHtml], { type: 'text/html;charset=utf-8' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `marketplace-raw-${Date.now()}.html`;
+            link.click();
+        };
         
         const extractedImages = parseMarketplaceHtml(html);
         console.log("[Client] Imagens extraídas pelo parser:", extractedImages);
