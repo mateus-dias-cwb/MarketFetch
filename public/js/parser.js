@@ -4,36 +4,30 @@ export function parseMarketplaceHtml(htmlString) {
     
     const mediaUrls = new Set();
 
-    // 1. Varre todas as tags <link> (preload, image_src, etc.)
-    doc.querySelectorAll('link').forEach(link => {
+    // Log para inspecionar o HTML bruto se necessário
+    console.log("[Parser] HTML inspecionado. Tamanho total:", htmlString.length);
+
+    // 1. Varre tags <link rel="preload"> focando nas imagens do visualizador do Marketplace
+    doc.querySelectorAll('link[rel="preload"]').forEach(link => {
         const href = link.getAttribute('href');
-        if (href && (href.includes('scontent') || href.includes('fbcdn.net')) && !href.includes('profile')) {
-            mediaUrls.add(href);
+        const preloader = link.getAttribute('data-preloader') || '';
+        
+        if (href && (preloader.includes('Marketplace') || href.includes('t39.30808') || href.includes('scontent'))) {
+            if (/\.(jpg|jpeg|png|webp)(\?|$)/i.test(href) || href.includes('stp=')) {
+                mediaUrls.add(href);
+            }
         }
     });
 
-    // 2. Varre todas as meta tags (og:image e afins)
-    doc.querySelectorAll('meta').forEach(meta => {
-        const content = meta.getAttribute('content');
-        if (content && (content.includes('scontent') || content.includes('fbcdn.net')) && !content.includes('profile')) {
-            mediaUrls.add(content);
-        }
-    });
+    // 2. Captura a imagem principal do Open Graph
+    const ogImage = doc.querySelector('meta[property="og:image"]');
+    if (ogImage && ogImage.content) {
+        mediaUrls.add(ogImage.content);
+    }
 
-    // 3. Varre todas as tags <img> e seus atributos customizados
-    doc.querySelectorAll('img').forEach(img => {
-        const src = img.src || img.getAttribute('data-src') || img.getAttribute('data-ije-src') || img.getAttribute('srcset');
-        if (src) {
-            // Se for srcset, pega todas as URLs separadas por vírgula
-            const urls = src.split(',');
-            urls.forEach(u => {
-                const cleanUrl = u.trim().split(' ')[0];
-                if (cleanUrl.includes('scontent') || cleanUrl.includes('fbcdn.net')) {
-                    mediaUrls.add(cleanUrl);
-                }
-            });
-        }
+    // 3. Filtro rigoroso: remove qualquer URL que seja .css, .js ou fonte
+    return Array.from(mediaUrls).filter(url => {
+        const lower = url.toLowerCase();
+        return !lower.includes('.css') && !lower.includes('.js') && !lower.includes('.woff') && !lower.includes('emoji');
     });
-
-    return Array.from(mediaUrls);
 }
