@@ -2,19 +2,19 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
-    // Se a rota for /proxy, executa a lógica de busca
+    const corsHeaders = {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type",
+    };
+
+    if (request.method === "OPTIONS") {
+      return new Response(null, { headers: corsHeaders });
+    }
+
+    // Rota do Proxy
     if (url.pathname === "/proxy") {
       const targetUrl = url.searchParams.get("url");
-
-      const corsHeaders = {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type",
-      };
-
-      if (request.method === "OPTIONS") {
-        return new Response(null, { headers: corsHeaders });
-      }
 
       if (!targetUrl) {
         return new Response(JSON.stringify({ error: "Parâmetro ?url= ausente" }), {
@@ -50,7 +50,11 @@ export default {
       }
     }
 
-    // Para qualquer outra rota, a Cloudflare serve os arquivos estáticos da pasta public/ automaticamente
-    return env.ASSETS.fetch(request);
+    // Serve os arquivos estáticos da pasta public/ configurada no wrangler.jsonc
+    try {
+      return await env.ASSETS.fetch(request);
+    } catch (e) {
+      return new Response("Not Found", { status: 404 });
+    }
   },
 };
