@@ -4,30 +4,36 @@ export function parseMarketplaceHtml(htmlString) {
     
     const mediaUrls = new Set();
 
-    // Log para inspecionar o HTML bruto se necessário
-    console.log("[Parser] HTML inspecionado. Tamanho total:", htmlString.length);
+    console.log("[Parser] Iniciando varredura profunda de URLs no HTML...");
 
-    // 1. Varre tags <link rel="preload"> focando nas imagens do visualizador do Marketplace
-    doc.querySelectorAll('link[rel="preload"]').forEach(link => {
-        const href = link.getAttribute('href');
-        const preloader = link.getAttribute('data-preloader') || '';
-        
-        if (href && (preloader.includes('Marketplace') || href.includes('t39.30808') || href.includes('scontent'))) {
-            if (/\.(jpg|jpeg|png|webp)(\?|$)/i.test(href) || href.includes('stp=')) {
-                mediaUrls.add(href);
+    // 1. Regex global para capturar qualquer URL de imagem do CDN do Facebook no texto cru do HTML/scripts
+    // O Facebook costuma escapar barras em JSON como \u002F ou usar barras normais /
+    const rawMatches = htmlString.match(/https?:\/\/[^"'\s<>]+?\.(?:jpg|jpeg|png|webp)(?:\?[^"'\s<>]*?)?/gi);
+    
+    if (rawMatches) {
+        rawMatches.forEach(rawUrl => {
+            // Limpa caracteres de escape comuns do JSON (\u002F -> / e barras invertidas)
+            const cleanUrl = rawUrl.replace(/\\u002F/g, '/').replace(/\\/g, '');
+            
+            if (
+                (cleanUrl.includes('scontent') || cleanUrl.includes('fbcdn.net')) &&
+                !cleanUrl.includes('profile') &&
+                !cleanUrl.includes('emoji') &&
+                !cleanUrl.toLowerCase().includes('.css') &&
+                !cleanUrl.toLowerCase().includes('.js') &&
+                !cleanUrl.toLowerCase().includes('.woff')
+            ) {
+                mediaUrls.add(cleanUrl);
             }
-        }
-    });
+        });
+    }
 
-    // 2. Captura a imagem principal do Open Graph
+    // 2. Garante captação da Open Graph principal caso venha isolada
     const ogImage = doc.querySelector('meta[property="og:image"]');
     if (ogImage && ogImage.content) {
         mediaUrls.add(ogImage.content);
     }
 
-    // 3. Filtro rigoroso: remove qualquer URL que seja .css, .js ou fonte
-    return Array.from(mediaUrls).filter(url => {
-        const lower = url.toLowerCase();
-        return !lower.includes('.css') && !lower.includes('.js') && !lower.includes('.woff') && !lower.includes('emoji');
-    });
+    console.log(`[Parser] Total de mídias únicas extraídas: ${mediaUrls.size}`);
+    return Array.from(mediaUrls);
 }
